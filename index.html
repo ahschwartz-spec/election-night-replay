@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en" data-mode="static" data-polls-name="Polling Average (Nate Silver)" data-votecast-name="Fox News Voter Poll">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Replaced by app.js; says REPLAY in replay mode so a tab can't be mistaken for live. -->
+    <title>Replay · Election night 2026</title>
+    <link rel="stylesheet" href="static/style.css" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🗳</text></svg>"
+    />
+  </head>
+  <body>
+    <!-- Shown only in replay mode, above everything, on every screen. -->
+    <div id="replay-banner" hidden></div>
+    <!-- Shown only when the page can't reach server.py. -->
+    <div id="offline-banner" hidden></div>
+
+    <header id="top-bar"></header>
+
+    <main>
+      <nav id="race-list"></nav>
+      <div class="right-column">
+        <!-- The hand-entry form. Kept outside the race panel so the 30-second refresh, which
+             redraws the panel, can never wipe numbers being typed. -->
+        <section id="entry-panel" hidden></section>
+        <section id="race-panel"></section>
+      </div>
+    </main>
+
+    <script type="module" src="static/app.js"></script>
+  </body>
+</html>

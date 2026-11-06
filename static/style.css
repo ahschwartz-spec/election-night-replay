@@ -1,0 +1,960 @@
+/*
+ * One dark theme, modeled on the fantasy-football draft board (user's choice, 2026-10-23,
+ * replacing the first mid-gray light theme): high contrast, big numbers, easy on the eyes next to
+ * a TV in a dim room. Race list on the left, the chosen race on the right, all on one screen.
+ *
+ * PARTY COLORS ARE DEFINED HERE AND NOWHERE ELSE: Democrats blue, Republicans red, independents
+ * (and any other party) gray. They're lighter shades than on a white page, so they stay readable
+ * on dark panels. Scripts only ever add a `party-D` / `party-R` / `party-I` class.
+ */
+
+:root {
+  --party-D: #5aa3ff;
+  --party-R: #ff6b64;
+  --party-I: #a3acb7;
+
+  --bg: #0e1116;
+  --panel: #161b22;
+  --panel-2: #1c232c;
+  --line: #2a333f;
+  --text: #e6edf3;
+  --muted: #8b98a5;
+  --faint: #5d6874;
+  --accent: #58a6ff;
+  --select: #1f3047;
+  --warn: #d29922;
+  --warn-text: #2a1c00;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Thin scrollbars, as on the draft board: a wide native one eats width from the tables. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 4px;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.4 ui-sans-serif, -apple-system, "Segoe UI", system-ui, sans-serif;
+  font-variant-numeric: tabular-nums; /* digits line up in columns */
+}
+
+button {
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.party-D { color: var(--party-D); }
+.party-R { color: var(--party-R); }
+.party-I { color: var(--party-I); }
+.muted { color: var(--muted); }
+.faint { color: var(--faint); }
+
+/* --- banners ------------------------------------------------------------------------------ */
+
+#replay-banner,
+#offline-banner {
+  padding: 6px 14px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+#replay-banner {
+  background: var(--warn);
+  color: var(--warn-text);
+}
+
+/* The static replay's bar (replay.js): title, then the controls, wrapping on narrow screens. */
+#replay-banner .replay-controls {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-left: 12px;
+  font-weight: 400;
+}
+
+#replay-banner input[type='range'] {
+  width: min(320px, 50vw);
+}
+
+#offline-banner {
+  background: #b62324;
+  color: white;
+}
+
+/* --- top bar ------------------------------------------------------------------------------ */
+
+#top-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 8px 14px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+}
+
+.clock {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.timeline {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.timeline button {
+  border: 1px solid var(--line);
+  color: var(--faint);
+  border-radius: 4px;
+  padding: 2px 7px;
+}
+
+.timeline button.passed {
+  color: var(--text);
+  background: var(--panel-2);
+}
+
+.timeline button.active {
+  border-color: var(--accent);
+  background: var(--select);
+  color: var(--text);
+}
+
+.feeds {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.refresh {
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  border-radius: 4px;
+  padding: 3px 10px;
+}
+
+.refresh:hover {
+  border-color: var(--muted);
+}
+
+/* --- layout ------------------------------------------------------------------------------- */
+
+main {
+  display: grid;
+  /* The race list is wide enough for "D+12.1 100% (100%)" on one line (user, 2026-10-28). */
+  grid-template-columns: 400px minmax(0, 1fr);
+  gap: 10px;
+  padding: 10px;
+  align-items: start;
+}
+
+/* --- race list ---------------------------------------------------------------------------- */
+
+#race-list {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.list-row {
+  display: grid;
+  grid-template-columns: 34px 1fr 1fr 34px;
+  border-bottom: 1px solid var(--line);
+}
+
+.list-row.head {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.list-row.head > div {
+  padding: 4px 6px;
+}
+
+.list-row.closing-highlight {
+  background: var(--select);
+}
+
+.state-code {
+  padding: 6px;
+  font-weight: 600;
+}
+
+.cell {
+  padding: 5px 6px;
+  text-align: left;
+  border-left: 1px solid var(--line);
+  white-space: nowrap; /* one line, whatever the numbers */
+  overflow: hidden;
+  text-overflow: ellipsis; /* if a window is ever too narrow, cut off with … rather than wrap */
+}
+
+.cell:hover {
+  background: var(--panel-2);
+}
+
+.cell.selected {
+  background: var(--select);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.cell.empty {
+  cursor: default;
+  color: var(--faint);
+}
+
+.cell .margin {
+  font-weight: 700;
+}
+
+.tag {
+  display: inline-block;
+  font-size: 11px;
+  padding: 0 4px;
+  border-radius: 3px;
+  background: var(--panel-2);
+  color: var(--muted);
+  vertical-align: 1px;
+}
+
+.tag.warn {
+  background: var(--warn);
+  color: var(--warn-text);
+}
+
+.list-note {
+  padding: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* --- race panel --------------------------------------------------------------------------- */
+
+#race-panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  min-height: 300px;
+}
+
+.panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.panel-head h1 {
+  font-size: 18px;
+  margin: 0;
+}
+
+.headline {
+  display: flex;
+  align-items: baseline;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin: 10px 0 2px;
+}
+
+.headline .big {
+  font-size: 30px;
+  font-weight: 700;
+}
+
+.interim-note {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+
+.pace {
+  background: var(--panel-2);
+  border-radius: 6px;
+  padding: 7px 10px;
+  margin-bottom: 10px;
+}
+
+.pace .sentence {
+  font-weight: 600;
+}
+
+.message {
+  padding: 10px 0;
+  color: var(--muted);
+}
+
+.notes {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.panel-subhead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+
+.panel-actions button,
+.entry-close,
+.save-anyway {
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  border-radius: 4px;
+  padding: 3px 10px;
+  font-size: 13px;
+}
+
+.panel-actions button:hover,
+.entry-close:hover {
+  border-color: var(--muted);
+}
+
+.tag.hand {
+  background: #3a2f12;
+  color: #f2cc60;
+}
+
+.tag.due {
+  background: #12305a;
+  color: #9ecbff;
+}
+
+.panel-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.panel-actions button.due {
+  border-color: var(--accent);
+}
+
+.votecast-line {
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.votecast-source {
+  margin-top: 8px;
+}
+
+.votecast-source select {
+  margin-left: 6px;
+  padding: 3px 6px;
+  font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+
+.votecast-form .entry-table input {
+  width: 70px;
+}
+
+.votecast-preview {
+  margin-top: 8px;
+}
+
+label.replace {
+  display: block;
+  margin-top: 4px;
+}
+
+/* --- hand-entry form ---------------------------------------------------------------------- */
+
+.right-column {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+#entry-panel {
+  background: var(--panel);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+
+.entry-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.entry-head h2 {
+  font-size: 15px;
+  margin: 0;
+}
+
+.entry-practice {
+  margin-top: 6px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: var(--warn);
+  color: var(--warn-text);
+  font-size: 12px;
+}
+
+.entry-table {
+  border-collapse: collapse;
+  margin-top: 8px;
+}
+
+/* The boxes, with room to their right for the wrong-race warning. */
+.entry-body {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.entry-mismatch {
+  margin-top: 8px;
+  max-width: 260px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--warn);
+  color: var(--warn-text);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* The whole form's border turns amber too, so the mismatch shows even at a glance. */
+#entry-panel.mismatch {
+  border-color: var(--warn);
+}
+
+.entry-table th,
+.entry-table td {
+  padding: 2px 6px;
+  text-align: left;
+  font-weight: 400;
+}
+
+.entry-table th {
+  font-size: 12px;
+}
+
+.entry-table tr.statewide td {
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 6px;
+  font-weight: 600;
+}
+
+.entry-table input,
+.entry-table select {
+  width: 110px;
+  padding: 3px 6px;
+  font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  text-align: right;
+}
+
+.entry-table select {
+  width: auto;
+  text-align: left;
+}
+
+.entry-table input:focus,
+.entry-table select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.entry-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+button.primary {
+  background: var(--accent);
+  color: #0b1a2c;
+  font-weight: 600;
+  border-radius: 4px;
+  padding: 4px 16px;
+}
+
+.entry-problem {
+  margin-top: 8px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.entry-problem.error {
+  background: #3d1416;
+  color: #ffb3ad;
+}
+
+.entry-problem.warn {
+  background: #3a2f12;
+  color: #f2cc60;
+}
+
+.entry-problem ul {
+  margin: 4px 0;
+  padding-left: 20px;
+}
+
+/* --- county table ------------------------------------------------------------------------- */
+
+table.counties {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+table.counties th,
+table.counties td {
+  padding: 3px 6px;
+  border-bottom: 1px solid var(--line);
+  text-align: right;
+  white-space: nowrap;
+}
+
+table.counties th {
+  color: var(--muted);
+  font-weight: 400;
+  font-size: 12px;
+  position: sticky;
+  top: 0;
+  background: var(--panel);
+  cursor: pointer;
+  user-select: none;
+}
+
+table.counties th:hover {
+  color: var(--text);
+}
+
+table.counties th.sorted {
+  color: var(--text);
+}
+
+table.counties th:first-child,
+table.counties td:first-child {
+  text-align: left;
+}
+
+table.counties tbody tr:hover {
+  background: var(--panel-2);
+}
+
+table.counties tr.unreported td {
+  color: var(--faint);
+}
+
+table.counties tr.unreported td.needs {
+  /* What an unreported county needs still matters; keep it readable, in party color. */
+  opacity: 0.7;
+}
+
+/* The needle's two-line headline: projected margin and 90% range, then the probability. */
+.needle-head .range {
+  font-size: 18px;
+  color: var(--muted);
+  margin-left: 6px;
+}
+
+.needle-head .chance {
+  font-size: 20px;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.headline-sub {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin: 4px 0 2px;
+}
+
+/* --- vote-share chart (chart.js) ---------------------------------------------------------- */
+
+.vote-chart {
+  margin: 8px 0 10px;
+}
+
+.vote-chart svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.vote-chart figcaption {
+  font-size: 12px;
+}
+
+.vote-chart .grid {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+
+.vote-chart .grid.fifty {
+  /* Thin and dashed, so it doesn't hide the moment the shaded ranges stop overlapping. */
+  stroke: var(--muted);
+  stroke-width: 0.75;
+  stroke-dasharray: 3 3;
+}
+
+.vote-chart .axis {
+  fill: var(--muted);
+  font-size: 11px;
+}
+
+/* Party colors come from the party-D / party-R / party-I classes (color), via currentColor. */
+.vote-chart .series {
+  fill: none;
+  stroke: currentColor;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.vote-chart .projected {
+  stroke-width: 2.5;
+}
+
+.vote-chart .projected.dashed {
+  stroke-dasharray: 7 4;
+}
+
+.vote-chart .counted {
+  stroke-width: 1.2;
+  stroke-dasharray: 1.5 3;
+  opacity: 0.8;
+}
+
+.vote-chart .band {
+  fill: currentColor;
+  stroke: none;
+  opacity: 0.22;
+}
+
+.vote-chart .band-edge {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1;
+  opacity: 0.75;
+}
+
+.vote-chart .marker {
+  fill: var(--muted);
+  stroke: var(--panel);
+  stroke-width: 1.5;
+}
+
+.vote-chart .marker:hover {
+  fill: var(--text);
+}
+
+.vote-chart .end {
+  fill: currentColor;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.vote-chart .lone {
+  fill: currentColor;
+}
+
+/* --- county table: census column and category dividers ------------------------------------ */
+
+table.counties th.census-head {
+  cursor: default;
+  white-space: nowrap;
+}
+
+.census-pick {
+  font: inherit;
+  font-size: 12px;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 1px 4px;
+}
+
+.census-flip {
+  margin-left: 4px;
+  padding: 0 5px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+table.counties td.census {
+  color: var(--muted);
+}
+
+/* The first row of each new category (area type, metro/rural, NCHS level) gets a clear line. */
+table.counties tr.divider td {
+  border-top: 2px solid var(--muted);
+}
+
+/* Practice mode's step buttons, in the amber banner. */
+.practice-steps {
+  margin-left: 12px;
+}
+
+.practice-steps button {
+  margin-right: 4px;
+  padding: 1px 10px;
+  border: 1px solid var(--warn-text);
+  border-radius: 4px;
+  color: var(--warn-text);
+  font-weight: 600;
+}
+
+.practice-steps button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.vote-chart {
+  position: relative; /* the hover box is placed inside it */
+}
+
+.chart-hover {
+  position: absolute;
+  z-index: 5;
+  max-width: 360px;
+  padding: 6px 9px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel-2);
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.45;
+  pointer-events: none;
+}
+
+/* A tighter county table, leaving room for the County Traits dropdown. */
+table.counties th,
+table.counties td {
+  padding: 2px 5px;
+}
+
+table.counties td:first-child {
+  white-space: nowrap;
+}
+
+.census-pick {
+  min-width: 150px;
+}
+
+/* Over/under shading, steps 1-4 (config/dashboard.toml [over_under_shading]). Mixed from the
+   party colors defined at the top of this file, so those stay defined in one place. */
+table.counties td.shade-D { --shade: var(--party-D); }
+table.counties td.shade-R { --shade: var(--party-R); }
+table.counties td.shade-I { --shade: var(--party-I); }
+table.counties td.shade-1 { background: color-mix(in srgb, var(--shade) 12%, transparent); }
+table.counties td.shade-2 { background: color-mix(in srgb, var(--shade) 25%, transparent); }
+table.counties td.shade-3 { background: color-mix(in srgb, var(--shade) 42%, transparent); }
+table.counties td.shade-4 { background: color-mix(in srgb, var(--shade) 62%, transparent); }
+/* On the deeper shades, plain light text reads better than party-colored text. */
+table.counties td.shade-3 span,
+table.counties td.shade-4 span {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* The race list's data-status column (raceList.js feedStatus). */
+.feed-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-left: 1px solid var(--line);
+  cursor: default;
+}
+
+.feed-status.level-waiting { color: var(--faint); }
+.feed-status.level-fresh { color: #3fb950; }
+.feed-status.level-open { color: #ffffff; }
+.feed-status.level-aging { color: #f0883e; }
+.feed-status.level-stale { color: #f85149; }
+.feed-status.level-broken { color: #f85149; font-size: 16px; }
+
+/* A race called by a network: the list cell inverts (party background, light text). */
+.cell.called-D { background: var(--party-D); }
+.cell.called-R { background: var(--party-R); }
+.cell.called-I { background: var(--party-I); }
+.cell.called,
+.cell.called span {
+  color: #ffffff !important;
+}
+.cell.called:hover { filter: brightness(1.1); }
+.cell.called.selected { box-shadow: inset 3px 0 0 #ffffff; }
+
+/* The race panel's Calls row. */
+.calls-line {
+  margin-top: 6px;
+  font-size: 13px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  align-items: center;
+}
+
+.call button {
+  margin-left: 4px;
+  padding: 0 7px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.call button:hover { border-color: var(--muted); }
+.call-undo { color: var(--muted); }
+
+.entry-table input.mail-pct {
+  width: 56px;
+}
+
+.entry-table input:disabled {
+  opacity: 0.35;
+}
+
+/* Narrower number boxes so the Status and Mail % columns fit beside them. */
+.entry-form:not(.votecast-form) .entry-table input {
+  width: 96px;
+}
+
+/* If the window is narrow, the entry form scrolls sideways rather than hiding columns. */
+#entry-panel {
+  overflow-x: auto;
+}
+
+/* The Enter call form (callForm.js). */
+.call-form {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.call-form select {
+  margin-left: 4px;
+  padding: 2px 6px;
+  font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+
+.call-pick {
+  padding: 3px 12px;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.call-list {
+  flex-basis: 100%;
+  margin: 4px 0 0;
+  padding-left: 18px;
+}
+
+.call-list .call-undo {
+  margin-left: 6px;
+  padding: 0 6px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* The over/under column's tiny bars (racePanel.js overBar): a track, and a fill in the party
+   color of whoever is ahead of pace. */
+table.counties td.over {
+  white-space: nowrap;
+}
+
+.over-bar {
+  display: inline-block;
+  width: 36px;
+  height: 7px;
+  margin-right: 6px;
+  vertical-align: 1px;
+  background: var(--panel-2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.over-bar > span {
+  display: block;
+  height: 100%;
+  background: currentColor;
+}
+
+/* The Senate net-change counter under the race list. */
+.senate-net {
+  padding: 7px 6px;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+}
+
+.chart-filling {
+  font-size: 12px;
+  color: var(--warn);
+}
+
+/* The over/under number sits in a fixed-width slot, so the bars before it line up whether the
+   number has one digit or two ("D 4.5" / "D 12.1"; user, 2026-10-28). */
+.over-num {
+  display: inline-block;
+  min-width: 4.4em;
+  text-align: right;
+}
+
+/* Vote-type progress lines under the pace line (by-type feeds only). */
+.type-progress {
+  margin: -4px 0 10px;
+  padding: 0 10px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* Drop-folder races: "Source · Save in drop\TX" under the race header (user, 2026-11-03). */
+.drop-line { margin: 4px 0; font-size: 0.9em; }
+/* "CNN | SoS" in the hand-entry form's header. */
+.entry-links { margin-right: auto; margin-left: 12px; font-size: 0.9em; }
+.drop-line a, .entry-links a { color: inherit; text-decoration: underline; }
